@@ -8,7 +8,7 @@ export async function POST(req: NextRequest){
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded",
-            accept: "application/json",
+            "accept": "application/json",
             'x-api-key': process.env.API_KEY!
         
         },
