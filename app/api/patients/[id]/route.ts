@@ -40,7 +40,7 @@ export async function PUT(req: NextRequest, {params}: {params: {id: string}}) {
     const {id} = params;
 
     const cookieStore = await cookies();
-    const access_token = cookieStore.get("access_token");
+    const access_token = cookieStore.get("access_token")?.value;
 
     const {name, email, phone, dob, address, emergencyContact, status} = await req.json();
     
