@@ -4,19 +4,21 @@ import { NextResponse } from "next/server";
 export async function GET() {
     const cookieStore =await cookies();
         
-    const refresh_token = cookieStore.get("refresh_token")?.value;
+    const refreshToken = cookieStore.get("refresh_token")?.value;
 
-        if(!refresh_token){
+        if(!refreshToken){
             return NextResponse.json({error:"No refresh token found"}, {status: 401})
         };
 
         const res = await fetch(`${process.env.BASE_URL}/o/token`, {
             method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-urlencoded",
+                "x-api-key": process.env.API_KEY!
+            },
             body: new URLSearchParams({
-                refresh_token: refresh_token,
-                grant_type: "refresh_token",
-                client_id: process.env.CLIENT_ID!,
-                client_secret: process.env.CLIENT_SECRET!
+                "grant_type": "refresh_token",
+                refresh_token: refreshToken
             })
         });
 
@@ -35,7 +37,7 @@ export async function GET() {
             maxAge: tokenData.expires_in
         });
         
-        cookieStore.set("refesh_token", tokenData.refresh_token, {
+        cookieStore.set("refresh_token", tokenData.refresh_token, {
             httpOnly: true,
             secure: true,
             sameSite: "strict",
