@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
-import { Home, Users, Calendar, UserCheck, Pill, AlertTriangle, Menu, Stethoscope } from "lucide-react"
+import { Home, Users, Calendar, UserCheck, Pill, AlertTriangle, Menu, Stethoscope, DollarSign } from "lucide-react"
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home, badge: null },
@@ -16,6 +16,7 @@ const navigation = [
   { name: "Providers", href: "/providers", icon: UserCheck, badge: null },
   { name: "Medications", href: "/medications", icon: Pill, badge: null },
   { name: "Allergies", href: "/allergies", icon: AlertTriangle, badge: "8" },
+  { name: "Billing", href: "/billing", icon: DollarSign, badge: null },
 ]
 
 interface SidebarProps {
