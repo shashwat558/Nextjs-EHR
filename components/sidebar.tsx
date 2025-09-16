@@ -11,8 +11,8 @@ import { Home, Users, Calendar, UserCheck, Pill, AlertTriangle, Menu, Stethoscop
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home, badge: null },
-  { name: "Patients", href: "/patients", icon: Users, badge: "1,247" },
-  { name: "Appointments", href: "/appointments", icon: Calendar, badge: "23" },
+  { name: "Patients", href: "/patients", icon: Users, badge: null },
+  { name: "Appointments", href: "/appointments", icon: Calendar, badge: null },
   { name: "Providers", href: "/providers", icon: UserCheck, badge: null },
   { name: "Medications", href: "/medications", icon: Pill, badge: null },
   { name: "Allergies", href: "/allergies", icon: AlertTriangle, badge: "8" },
