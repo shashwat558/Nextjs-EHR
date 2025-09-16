@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest){
     const {username, password} = await req.json();
 
-    const res = await fetch(process.env.MOD_MED_AUTH_URL!, {
+    const res = await fetch(process.env.MOCK_MOD_MED_AUTH_URL!, {
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded",

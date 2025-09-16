@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     
-    // Extract all search parameters
+    
     const count = searchParams.get("_count");
     const lastUpdated = searchParams.get("_lastUpdated");
     const encounter = searchParams.get("encounter");
@@ -25,10 +25,10 @@ export async function GET(req: NextRequest) {
     const code = searchParams.get("code");
     const identifier = searchParams.get("identifier");
 
-    // Build query parameters object
+    
     const queryParams: Record<string, string> = {};
 
-    // Add parameters only if they exist
+    
     if (count) queryParams._count = count;
     if (lastUpdated) queryParams._lastUpdated = lastUpdated;
     if (encounter) queryParams.encounter = encounter;
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     if (code) queryParams.code = code;
     if (identifier) queryParams.identifier = identifier;
 
-    // Build query string
+    
     const queryString = new URLSearchParams(queryParams).toString();
     const apiUrl = `${process.env.BASE_URL}/apiportal/ema/fhir/v2/DiagnosticReport${queryString ? `?${queryString}` : ''}`;
 
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
             presentedForm
         } = await req.json();
 
-        // Build FHIR DiagnosticReport resource
+        
         const diagnosticReportResource = {
             resourceType: "DiagnosticReport",
             ...(identifier && { identifier }),
@@ -187,7 +187,7 @@ export async function PUT(req: NextRequest) {
             return NextResponse.json({ error: "DiagnosticReport ID is required for update" }, { status: 400 });
         }
 
-        // Build FHIR DiagnosticReport resource
+    
         const diagnosticReportResource = {
             resourceType: "DiagnosticReport",
             id,

@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
     
     const queryString = new URLSearchParams(queryParams).toString();
     const apiUrl = `${process.env.BASE_URL}/apiportal/ema/fhir/v2/Patient${queryString ? `?${queryString}` : ''}`;
+    console.log(apiUrl);
 
     try {
         const res = await fetch(apiUrl, {
