@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Search, Calendar, Clock, User, Loader2 } from "lucide-react"
+import { Search, Calendar, Clock, Loader2 } from "lucide-react"
 
 interface Slot {
   id: string

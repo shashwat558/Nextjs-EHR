@@ -36,7 +36,7 @@ interface FhirAddress {
   country?: string
 }
 
-interface FhirPatient {
+export interface FhirPatient {
   name?: FhirHumanName[]
   gender?: string
   birthDate?: string

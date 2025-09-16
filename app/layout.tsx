@@ -1,4 +1,4 @@
-import { Inter, JetBrains_Mono } from "next/font/google"
+
 import { Analytics } from "@vercel/analytics/next"
 import { Header } from "@/components/header"
 import { Sidebar } from "@/components/sidebar"
@@ -6,17 +6,7 @@ import { Suspense } from "react"
 import "./globals.css"
 import { Metadata } from "next"
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-})
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
-  display: "swap",
-})
 
 export const metadata: Metadata = {
   title: "HealthCare Pro - Medical Management System",
@@ -30,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en">
       <body className="font-sans antialiased">
         <div className="flex h-screen bg-background">
           <div className="hidden md:flex md:w-64 md:flex-col">

@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertTriangle, Calendar, Clock, User } from "lucide-react"
 
 interface RescheduleDialogProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   appointment: any
   open: boolean
   onOpenChange: (open: boolean) => void

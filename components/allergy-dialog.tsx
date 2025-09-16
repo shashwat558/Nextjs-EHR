@@ -17,17 +17,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-interface AllergyUI {
-  id: string
-  allergen: string
-  patient: string
-  patientId: string
-  severity: string
-  reaction: string
-  notes: string
-  dateReported: string
-  reportedBy: string
-}
 
 interface AllergyFormData {
   id?: string

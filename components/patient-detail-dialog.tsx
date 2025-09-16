@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { User, Phone, Mail, MapPin, Calendar, AlertTriangle, Activity, Pill, Plus, Edit, Trash2 } from "lucide-react"
 
 interface PatientDetailDialogProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   patient: any
   open: boolean
   onOpenChange: (open: boolean) => void

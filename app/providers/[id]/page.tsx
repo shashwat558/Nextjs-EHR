@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -21,7 +22,7 @@ import {
   Loader2,
   RefreshCw,
   AlertCircle,
-  FileText,
+  
   Clock,
   Activity,
   Users,
@@ -143,9 +144,9 @@ export default function ProviderDetailPage() {
         phone: data.telecom?.find((t: any) => t.system === 'phone')?.value || 'N/A',
         license: data.qualification?.[0]?.identifier?.[0]?.value || 'N/A',
         status: data.active ? 'Active' : 'Inactive',
-        joinDate: 'N/A', // This would need to be fetched separately
-        patientsCount: 0, // This would need to be calculated separately
-        appointmentsToday: 0, // This would need to be fetched separately
+        joinDate: 'N/A', 
+        patientsCount: 0, 
+        appointmentsToday: 0, 
         gender: data.gender || 'N/A',
         birthDate: data.birthDate || 'N/A',
         address: data.address?.[0] ? 
@@ -168,6 +169,7 @@ export default function ProviderDetailPage() {
     if (providerId) {
       fetchProviderDetails();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [providerId]);
 
   const handleRefresh = async () => {
@@ -353,7 +355,7 @@ export default function ProviderDetailPage() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
-                    <p className="text-sm">{provider.birthDate !== 'N/A' ? new Date(provider.birthDate).toLocaleDateString() : 'N/A'}</p>
+                    <p className="text-sm">{provider.birthDate !== 'N/A' ? new Date(provider.birthDate as string).toLocaleDateString() : 'N/A'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Gender</label>
@@ -436,7 +438,7 @@ export default function ProviderDetailPage() {
                     <p className="text-2xl font-bold text-primary">{provider.patientsCount}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Today's Appointments</label>
+                    <label className="text-sm font-medium text-muted-foreground">Today&apos;s Appointments</label>
                     <p className="text-2xl font-bold text-accent">{provider.appointmentsToday}</p>
                   </div>
                 </div>
@@ -509,7 +511,7 @@ export default function ProviderDetailPage() {
                 <Calendar className="h-5 w-5" />
                 Schedule & Availability
               </CardTitle>
-              <CardDescription>Provider's schedule and availability</CardDescription>
+              <CardDescription>Provider&apos;s schedule and availability</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-center py-12">
@@ -531,7 +533,7 @@ export default function ProviderDetailPage() {
                 <Users className="h-5 w-5" />
                 Assigned Patients
               </CardTitle>
-              <CardDescription>Patients under this provider's care</CardDescription>
+              <CardDescription>Patients under this provider&apos;s care</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-center py-12">
@@ -551,7 +553,7 @@ export default function ProviderDetailPage() {
         open={isEditDialogOpen} 
         onOpenChange={setIsEditDialogOpen}
         provider={provider}
-        mode="edit"
+        
       />
     </div>
   );

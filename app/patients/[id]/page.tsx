@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -26,7 +27,7 @@ import {
   Clock,
   Activity
 } from "lucide-react";
-import { PatientDialog } from "@/components/patient-dialog";
+import { FhirPatient, PatientDialog } from "@/components/patient-dialog";
 
 interface Patient {
   id: string;
@@ -123,6 +124,7 @@ export default function PatientDetailPage() {
   const patientId = params.id as string;
 
   const [patient, setPatient] = useState<Patient | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [patientDetail, setPatientDetail] = useState<PatientDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -186,6 +188,7 @@ export default function PatientDetailPage() {
     if (patientId) {
       fetchPatientDetails();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientId]);
 
   const handleRefresh = async () => {
@@ -569,8 +572,8 @@ export default function PatientDetailPage() {
       <PatientDialog 
         open={isEditDialogOpen} 
         onOpenChange={setIsEditDialogOpen}
-        patient={patient}
-        mode="edit"
+        patient={patientDetail as FhirPatient}
+        
       />
     </div>
   );

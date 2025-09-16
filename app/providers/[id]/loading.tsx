@@ -1,4 +1,4 @@
-import { UserCheck, Stethoscope, GraduationCap, Activity } from "lucide-react";
+import { UserCheck, Stethoscope, Activity } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 

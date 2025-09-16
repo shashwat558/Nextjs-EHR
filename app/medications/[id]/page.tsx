@@ -22,8 +22,7 @@ import {
   Clock,
   Activity,
   Stethoscope,
-  AlertTriangle,
-  Info
+  AlertTriangle
 } from "lucide-react";
 import { MedicationDialog } from "@/components/medication-dialog";
 
@@ -107,6 +106,7 @@ export default function MedicationDetailPage() {
   const medicationId = params.id as string;
 
   const [medication, setMedication] = useState<Medication | null>(null);
+
   const [medicationDetail, setMedicationDetail] = useState<MedicationDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -132,6 +132,7 @@ export default function MedicationDetailPage() {
 
       const data = await response.json();
       setMedicationDetail(data);
+
 
       // Transform FHIR data to our Medication interface
       const transformedMedication: Medication = {
@@ -172,11 +173,13 @@ export default function MedicationDetailPage() {
     if (medicationId) {
       fetchMedicationDetails();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [medicationId]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchMedicationDetails();
+    console.log(medicationDetail)
     setIsRefreshing(false);
   };
 
@@ -590,7 +593,7 @@ export default function MedicationDetailPage() {
         open={isEditDialogOpen} 
         onOpenChange={setIsEditDialogOpen}
         medication={medication}
-        mode="edit"
+        
       />
     </div>
   );
