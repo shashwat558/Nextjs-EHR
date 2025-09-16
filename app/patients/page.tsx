@@ -383,6 +383,7 @@ export default function PatientsPage() {
       <PatientDialog 
         open={isAddDialogOpen} 
         onOpenChange={setIsAddDialogOpen}
+        onPatientCreated={fetchPatients}
       />
 
       {/* Patient Detail Dialog */}

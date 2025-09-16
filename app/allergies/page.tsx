@@ -1,91 +1,113 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Search, Plus, Edit, Trash2, AlertTriangle, User } from "lucide-react"
+import { Search, Plus, Edit, Trash2, AlertTriangle, User, RefreshCw } from "lucide-react"
 import { AllergyDialog } from "@/components/allergy-dialog"
 
-// Mock allergy data
-const mockAllergies = [
-  {
-    id: "A001",
-    allergen: "Penicillin",
-    patient: "John Doe",
-    patientId: "P001",
-    severity: "Severe",
-    reaction: "Anaphylaxis",
-    notes: "Requires immediate medical attention if exposed",
-    dateReported: "2023-05-15",
-    reportedBy: "Dr. Sarah Smith",
-  },
-  {
-    id: "A002",
-    allergen: "Shellfish",
-    patient: "John Doe",
-    patientId: "P001",
-    severity: "Moderate",
-    reaction: "Hives, swelling",
-    notes: "Avoid all shellfish products",
-    dateReported: "2023-05-15",
-    reportedBy: "Dr. Sarah Smith",
-  },
-  {
-    id: "A003",
-    allergen: "Latex",
-    patient: "Jane Smith",
-    patientId: "P002",
-    severity: "Mild",
-    reaction: "Skin irritation",
-    notes: "Use latex-free gloves during procedures",
-    dateReported: "2023-08-20",
-    reportedBy: "Dr. Michael Brown",
-  },
-  {
-    id: "A004",
-    allergen: "Peanuts",
-    patient: "Sarah Wilson",
-    patientId: "P004",
-    severity: "Severe",
-    reaction: "Anaphylaxis",
-    notes: "Carries EpiPen at all times",
-    dateReported: "2023-12-10",
-    reportedBy: "Dr. Sarah Smith",
-  },
-  {
-    id: "A005",
-    allergen: "Sulfa drugs",
-    patient: "Sarah Wilson",
-    patientId: "P004",
-    severity: "Moderate",
-    reaction: "Rash, fever",
-    notes: "Avoid sulfonamide antibiotics",
-    dateReported: "2023-12-10",
-    reportedBy: "Dr. Sarah Smith",
-  },
-  {
-    id: "A006",
-    allergen: "Codeine",
-    patient: "David Brown",
-    patientId: "P005",
-    severity: "Mild",
-    reaction: "Nausea, dizziness",
-    notes: "Use alternative pain medications",
-    dateReported: "2024-01-05",
-    reportedBy: "Dr. Michael Brown",
-  },
-]
+interface AllergyUI {
+  id: string
+  allergen: string
+  patient: string
+  patientId: string
+  severity: string
+  reaction: string
+  notes: string
+  dateReported: string
+  reportedBy: string
+}
 
 export default function AllergiesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [selectedAllergy, setSelectedAllergy] = useState<any>(null)
+  const [selectedAllergy, setSelectedAllergy] = useState<AllergyUI | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [allergies, setAllergies] = useState<AllergyUI[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const filteredAllergies = mockAllergies.filter(
+  const fetchAllergies = async () => {
+    try {
+      setIsLoading(true)
+
+      const res = await fetch('/api/allergies?_count=50', {
+        headers: { 'accept': 'application/json' }
+      })
+      if (!res.ok) throw new Error(`Failed to fetch allergies: ${res.status}`)
+      const data = await res.json()
+
+      // Handle both FHIR format (data.entry) and simple array format
+      let allergiesData: Record<string, unknown>[] = []
+      
+      if (data.entry && Array.isArray(data.entry)) {
+        // FHIR format
+        allergiesData = data.entry.map((entry: Record<string, unknown>) => entry.resource as Record<string, unknown>)
+      } else if (Array.isArray(data)) {
+        // Simple array format
+        allergiesData = data as Record<string, unknown>[]
+      }
+
+      if (allergiesData.length > 0) {
+        const transformed: AllergyUI[] = allergiesData.map((allergy: Record<string, unknown>) => {
+          // Check if it's already in UI format or needs transformation
+          if (allergy.id && allergy.allergen && allergy.patient && allergy.severity) {
+            // Already in UI format
+            return {
+              id: allergy.id as string,
+              allergen: allergy.allergen as string,
+              patient: allergy.patient as string,
+              patientId: allergy.patientId as string,
+              severity: allergy.severity as string,
+              reaction: allergy.reaction as string,
+              notes: allergy.notes as string,
+              dateReported: allergy.dateReported as string,
+              reportedBy: allergy.reportedBy as string,
+            }
+          } else {
+            // FHIR format - transform it
+            const code = allergy.code as Record<string, unknown>
+            const patient = allergy.patient as Record<string, unknown>
+            const reactions = (allergy.reaction as Record<string, unknown>[]) || []
+            const firstReaction = reactions[0] as Record<string, unknown> | undefined
+            const manifestations = (firstReaction?.manifestation as Record<string, unknown>[]) || []
+            const firstManifestation = manifestations[0] as Record<string, unknown> | undefined
+            const manifestationCoding = (firstManifestation?.coding as Record<string, unknown>[]) || []
+            const firstCoding = manifestationCoding[0] as Record<string, unknown> | undefined
+
+            return {
+              id: (allergy.id as string) || 'N/A',
+              allergen: (code?.text as string) || (code?.coding as Record<string, unknown>[])?.[0]?.display as string || 'Unknown',
+              patient: (patient?.display as string) || 'Unknown',
+              patientId: String((patient?.reference as string) || '').replace('Patient/', '') || 'N/A',
+              severity: (firstReaction?.severity as string) || 'Unknown',
+              reaction: (firstCoding?.display as string) || 'Unknown',
+              notes: (allergy.note as Record<string, unknown>[])?.[0]?.text as string || '',
+              dateReported: (allergy.recordedDate as string) || (allergy.onsetDateTime as string) || 'N/A',
+              reportedBy: (allergy.recorder as Record<string, unknown>)?.display as string || 'Unknown',
+            }
+          }
+        })
+        setAllergies(transformed)
+      } else {
+        setAllergies([])
+      }
+    } catch (err) {
+      console.error('Error fetching allergies:', err)
+      setAllergies([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchAllergies()
+  }, [])
+
+  const filteredAllergies = allergies.filter(
     (allergy) =>
       allergy.allergen.toLowerCase().includes(searchTerm.toLowerCase()) ||
       allergy.patient.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -93,7 +115,7 @@ export default function AllergiesPage() {
       allergy.reaction.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleEdit = (allergy: any) => {
+  const handleEdit = (allergy: AllergyUI) => {
     setSelectedAllergy(allergy)
     setIsEditDialogOpen(true)
   }
@@ -118,10 +140,21 @@ export default function AllergiesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Allergies</h1>
           <p className="text-muted-foreground">Manage patient allergies and adverse reactions</p>
         </div>
-        <Button onClick={() => setIsAddDialogOpen(true)} className="bg-accent hover:bg-accent/90">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Allergy
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={async () => { setIsRefreshing(true); await fetchAllergies(); setIsRefreshing(false) }}
+            className="h-9 w-9"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="sr-only">Refresh allergies</span>
+          </Button>
+          <Button onClick={() => setIsAddDialogOpen(true)} className="bg-accent hover:bg-accent/90">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Allergy
+          </Button>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -149,10 +182,13 @@ export default function AllergiesPage() {
         <CardHeader>
           <CardTitle>Allergy Records</CardTitle>
           <CardDescription>
-            {filteredAllergies.length} allerg{filteredAllergies.length !== 1 ? "ies" : "y"} found
+            {isLoading ? "Loading allergies..." : `${filteredAllergies.length} allerg${filteredAllergies.length !== 1 ? "ies" : "y"} found`}
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {isLoading ? (
+            <div className="text-sm text-muted-foreground py-8">Loading allergy records...</div>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -210,14 +246,29 @@ export default function AllergiesPage() {
               ))}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
 
       {/* Add Allergy Dialog */}
-      <AllergyDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
+      <AllergyDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} onAllergyCreated={fetchAllergies} />
 
       {/* Edit Allergy Dialog */}
-      <AllergyDialog allergy={selectedAllergy} open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} />
+      <AllergyDialog 
+        allergy={selectedAllergy ? {
+          id: selectedAllergy.id,
+          allergen: selectedAllergy.allergen,
+          patientId: selectedAllergy.patientId,
+          severity: selectedAllergy.severity,
+          reaction: selectedAllergy.reaction,
+          notes: selectedAllergy.notes,
+          dateReported: selectedAllergy.dateReported,
+          reportedBy: selectedAllergy.reportedBy
+        } : null} 
+        open={isEditDialogOpen} 
+        onOpenChange={setIsEditDialogOpen} 
+        onAllergyCreated={fetchAllergies} 
+      />
     </div>
   )
 }

@@ -1,91 +1,28 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Calendar, Plus, Filter, Clock, User, UserCheck, Search } from "lucide-react"
+import { Calendar, Plus, Filter, Clock, User, UserCheck, Search, RefreshCw } from "lucide-react"
 import { AppointmentDialog } from "@/components/appointment-dialog"
 import { RescheduleDialog } from "@/components/reschedule-dialog"
 
-// Mock appointment data
-const mockAppointments = [
-  {
-    id: "A001",
-    date: "2024-01-15",
-    time: "09:00",
-    patient: "John Doe",
-    patientId: "P001",
-    provider: "Dr. Sarah Smith",
-    type: "Consultation",
-    status: "Confirmed",
-    duration: 30,
-    notes: "Follow-up for hypertension",
-  },
-  {
-    id: "A002",
-    date: "2024-01-15",
-    time: "10:30",
-    patient: "Jane Smith",
-    patientId: "P002",
-    provider: "Dr. Sarah Smith",
-    type: "Follow-up",
-    status: "Confirmed",
-    duration: 15,
-    notes: "Asthma check-up",
-  },
-  {
-    id: "A003",
-    date: "2024-01-15",
-    time: "11:15",
-    patient: "Mike Johnson",
-    patientId: "P003",
-    provider: "Dr. Michael Brown",
-    type: "Check-up",
-    status: "Pending",
-    duration: 30,
-    notes: "Annual physical examination",
-  },
-  {
-    id: "A004",
-    date: "2024-01-15",
-    time: "14:00",
-    patient: "Sarah Wilson",
-    patientId: "P004",
-    provider: "Dr. Sarah Smith",
-    type: "Consultation",
-    status: "Confirmed",
-    duration: 45,
-    notes: "Initial consultation for allergies",
-  },
-  {
-    id: "A005",
-    date: "2024-01-15",
-    time: "15:30",
-    patient: "David Brown",
-    patientId: "P005",
-    provider: "Dr. Michael Brown",
-    type: "Follow-up",
-    status: "Confirmed",
-    duration: 20,
-    notes: "Back pain follow-up",
-  },
-  {
-    id: "A006",
-    date: "2024-01-16",
-    time: "09:30",
-    patient: "Emily Davis",
-    patientId: "P006",
-    provider: "Dr. Sarah Smith",
-    type: "Consultation",
-    status: "Cancelled",
-    duration: 30,
-    notes: "Patient requested cancellation",
-  },
-]
+interface AppointmentUI {
+  id: string
+  date: string
+  time: string
+  patient: string
+  patientId: string
+  provider: string
+  type: string
+  status: string
+  duration: number
+  notes: string
+}
 
 const providers = ["All Providers", "Dr. Sarah Smith", "Dr. Michael Brown", "Dr. Jennifer Wilson"]
 const appointmentTypes = ["All Types", "Consultation", "Follow-up", "Check-up", "Emergency"]
@@ -98,10 +35,89 @@ export default function AppointmentsPage() {
   const [selectedStatus, setSelectedStatus] = useState("All Status")
   const [searchTerm, setSearchTerm] = useState("")
   const [isBookDialogOpen, setIsBookDialogOpen] = useState(false)
-  const [selectedAppointment, setSelectedAppointment] = useState<any>(null)
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentUI | null>(null)
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false)
+  const [appointments, setAppointments] = useState<AppointmentUI[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const filteredAppointments = mockAppointments.filter((appointment) => {
+  const fetchAppointments = async () => {
+    try {
+      setIsLoading(true)
+
+      const res = await fetch('/api/appointments?_count=50', {
+        headers: { 'accept': 'application/json' }
+      })
+      if (!res.ok) throw new Error(`Failed to fetch appointments: ${res.status}`)
+      const data = await res.json()
+
+      // Handle both FHIR format (data.entry) and simple array format
+      let appointmentsData: Record<string, unknown>[] = []
+      
+      if (data.entry && Array.isArray(data.entry)) {
+        // FHIR format
+        appointmentsData = data.entry.map((entry: Record<string, unknown>) => entry.resource as Record<string, unknown>)
+      } else if (Array.isArray(data)) {
+        // Simple array format
+        appointmentsData = data as Record<string, unknown>[]
+      }
+
+      if (appointmentsData.length > 0) {
+        const transformed: AppointmentUI[] = appointmentsData.map((appt: Record<string, unknown>) => {
+          // Check if it's already in UI format or needs transformation
+          if (appt.id && appt.date && appt.time && appt.patient && appt.provider) {
+            // Already in UI format
+            return {
+              id: appt.id as string,
+              date: appt.date as string,
+              time: appt.time as string,
+              patient: appt.patient as string,
+              patientId: appt.patientId as string,
+              provider: appt.provider as string,
+              type: appt.type as string,
+              status: appt.status as string,
+              duration: appt.duration as number,
+              notes: appt.notes as string,
+            }
+          } else {
+            // FHIR format - transform it
+            const start = (appt.start as string) || ''
+            const date = start ? new Date(start) : null
+            const participants = (appt.participant as Record<string, unknown>[]) || []
+            const patientPart = participants.find((p: Record<string, unknown>) => String((p.actor as Record<string, unknown>)?.reference || '').startsWith('Patient/'))
+            const practitionerPart = participants.find((p: Record<string, unknown>) => String((p.actor as Record<string, unknown>)?.reference || '').startsWith('Practitioner/'))
+
+            return {
+              id: (appt.id as string) || 'N/A',
+              date: date ? date.toISOString().slice(0, 10) : 'N/A',
+              time: date ? date.toISOString().slice(11, 16) : 'N/A',
+              patient: ((patientPart?.actor as Record<string, unknown>)?.display as string) || 'Unknown',
+              patientId: String((patientPart?.actor as Record<string, unknown>)?.reference || '').replace('Patient/', '') || 'N/A',
+              provider: ((practitionerPart?.actor as Record<string, unknown>)?.display as string) || 'Unknown',
+              type: ((appt.appointmentType as Record<string, unknown>)?.text as string) || ((((appt.appointmentType as Record<string, unknown>)?.coding as Record<string, unknown>[])?.[0] as Record<string, unknown>)?.display as string) || 'N/A',
+              status: (appt.status as string) ? (appt.status as string).charAt(0).toUpperCase() + (appt.status as string).slice(1) : 'Pending',
+              duration: (appt.minutesDuration as number) || 0,
+              notes: (appt.description as string) || '',
+            }
+          }
+        })
+        setAppointments(transformed)
+      } else {
+        setAppointments([])
+      }
+    } catch (err) {
+      console.error('Error fetching appointments:', err)
+      setAppointments([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchAppointments()
+  }, [])
+
+  const filteredAppointments = appointments.filter((appointment) => {
     const matchesDate = selectedDate === "all" || appointment.date === selectedDate
     const matchesProvider = selectedProvider === "All Providers" || appointment.provider === selectedProvider
     const matchesType = selectedType === "All Types" || appointment.type === selectedType
@@ -114,7 +130,7 @@ export default function AppointmentsPage() {
     return matchesDate && matchesProvider && matchesType && matchesStatus && matchesSearch
   })
 
-  const handleReschedule = (appointment: any) => {
+  const handleReschedule = (appointment: AppointmentUI) => {
     setSelectedAppointment(appointment)
     setIsRescheduleDialogOpen(true)
   }
@@ -141,10 +157,21 @@ export default function AppointmentsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Appointments</h1>
           <p className="text-muted-foreground">Manage patient appointments and scheduling</p>
         </div>
+        <div className="flex items-center gap-2">
+        <Button 
+          variant="outline" 
+          size="icon"
+          onClick={async () => { setIsRefreshing(true); await fetchAppointments(); setIsRefreshing(false) }}
+          className="h-9 w-9"
+        >
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <span className="sr-only">Refresh appointments</span>
+        </Button>
         <Button onClick={() => setIsBookDialogOpen(true)} className="bg-accent hover:bg-accent/90">
           <Plus className="mr-2 h-4 w-4" />
           Book Appointment
         </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -234,10 +261,13 @@ export default function AppointmentsPage() {
         <CardHeader>
           <CardTitle>Appointment Schedule</CardTitle>
           <CardDescription>
-            {filteredAppointments.length} appointment{filteredAppointments.length !== 1 ? "s" : ""} found
+            {isLoading ? "Loading appointments..." : `${filteredAppointments.length} appointment${filteredAppointments.length !== 1 ? "s" : ""} found`}
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {isLoading ? (
+            <div className="text-sm text-muted-foreground py-8">Loading appointment schedule...</div>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -311,11 +341,12 @@ export default function AppointmentsPage() {
               ))}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
 
       {/* Book Appointment Dialog */}
-      <AppointmentDialog open={isBookDialogOpen} onOpenChange={setIsBookDialogOpen} />
+      <AppointmentDialog open={isBookDialogOpen} onOpenChange={setIsBookDialogOpen} onAppointmentCreated={fetchAppointments} />
 
       {/* Reschedule Dialog */}
       <RescheduleDialog

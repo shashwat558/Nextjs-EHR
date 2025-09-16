@@ -22,7 +22,18 @@ import { AlertTriangle } from "lucide-react"
 interface AppointmentDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  appointment?: any
+  appointment?: {
+    id?: string
+    patientId?: string
+    provider?: string
+    date?: string
+    time?: string
+    type?: string
+    duration?: string
+    status?: string
+    notes?: string
+  }
+  onAppointmentCreated?: () => void
 }
 
 const mockPatients = [
@@ -36,7 +47,7 @@ const mockPatients = [
 const providers = ["Dr. Sarah Smith", "Dr. Michael Brown", "Dr. Jennifer Wilson"]
 const appointmentTypes = ["Consultation", "Follow-up", "Check-up", "Emergency"]
 
-export function AppointmentDialog({ open, onOpenChange, appointment }: AppointmentDialogProps) {
+export function AppointmentDialog({ open, onOpenChange, appointment, onAppointmentCreated }: AppointmentDialogProps) {
   const [formData, setFormData] = useState({
     patientId: appointment?.patientId || "",
     provider: appointment?.provider || "",
@@ -44,20 +55,64 @@ export function AppointmentDialog({ open, onOpenChange, appointment }: Appointme
     time: appointment?.time || "",
     type: appointment?.type || "",
     duration: appointment?.duration || "30",
+    status: appointment?.status || "booked",
     notes: appointment?.notes || "",
+    reportableReason: "",
+    supportingInformation: "",
+    comment: "",
   })
   const [hasConflict, setHasConflict] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Simulate conflict check
-    if (formData.time === "10:00" && formData.date === "2024-01-15") {
-      setHasConflict(true)
-      return
-    }
     setHasConflict(false)
-    console.log("Appointment booked:", formData)
-    onOpenChange(false)
+
+    // Build FHIR Appointment payload
+    const startIso = `${formData.date}T${formData.time}:00Z`
+    const minutesDuration = parseInt(formData.duration, 10) || 30
+    
+    // Calculate end time if not provided
+    const startDate = new Date(startIso)
+    const endDate = new Date(startDate.getTime() + minutesDuration * 60000)
+    const endIso = endDate.toISOString()
+    
+    const payload = {
+      participant: [
+        { reference: `Patient/${formData.patientId}` },
+        { reference: `Practitioner/${formData.provider}` }
+      ],
+      appointmentType: { text: formData.type },
+      start: startIso,
+      end: endIso,
+      minutesDuration,
+      status: formData.status,
+      description: formData.notes || undefined,
+      ...(formData.reportableReason && { reportableReason: formData.reportableReason }),
+      ...(formData.supportingInformation && { supportingInformation: formData.supportingInformation }),
+      ...(formData.comment && { comment: formData.comment }),
+    }
+
+    try {
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: {
+          accept: 'application/fhir+json',
+          'content-type': 'application/fhir+json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        const text = await res.text()
+        console.error('Failed to create appointment', text)
+      } else {
+        onAppointmentCreated?.()
+      }
+    } catch (error) {
+      console.error('Error creating appointment:', error)
+    } finally {
+      onOpenChange(false)
+    }
   }
 
   const handleInputChange = (field: string, value: string) => {
@@ -167,6 +222,23 @@ export function AppointmentDialog({ open, onOpenChange, appointment }: Appointme
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="booked">Booked</SelectItem>
+                  <SelectItem value="arrived">Arrived</SelectItem>
+                  <SelectItem value="fulfilled">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="noshow">No Show</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
@@ -174,6 +246,37 @@ export function AppointmentDialog({ open, onOpenChange, appointment }: Appointme
                 onChange={(e) => handleInputChange("notes", e.target.value)}
                 placeholder="Additional notes or reason for appointment"
                 rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reportableReason">Reportable Reason</Label>
+              <Input
+                id="reportableReason"
+                value={formData.reportableReason}
+                onChange={(e) => handleInputChange("reportableReason", e.target.value)}
+                placeholder="Reason for reporting this appointment"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="supportingInformation">Supporting Information</Label>
+              <Input
+                id="supportingInformation"
+                value={formData.supportingInformation}
+                onChange={(e) => handleInputChange("supportingInformation", e.target.value)}
+                placeholder="Additional supporting information"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="comment">Comment</Label>
+              <Textarea
+                id="comment"
+                value={formData.comment}
+                onChange={(e) => handleInputChange("comment", e.target.value)}
+                placeholder="Additional comments"
+                rows={2}
               />
             </div>
 

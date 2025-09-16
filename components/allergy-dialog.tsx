@@ -17,10 +17,35 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+interface AllergyUI {
+  id: string
+  allergen: string
+  patient: string
+  patientId: string
+  severity: string
+  reaction: string
+  notes: string
+  dateReported: string
+  reportedBy: string
+}
+
+interface AllergyFormData {
+  id?: string
+  allergen?: string
+  patient?: string
+  patientId?: string
+  severity?: string
+  reaction?: string
+  notes?: string
+  dateReported?: string
+  reportedBy?: string
+}
+
 interface AllergyDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  allergy?: any
+  allergy?: AllergyFormData | null
+  onAllergyCreated?: () => void
 }
 
 const mockPatients = [
@@ -32,9 +57,25 @@ const mockPatients = [
 ]
 
 const providers = ["Dr. Sarah Smith", "Dr. Michael Brown", "Dr. Jennifer Wilson"]
-const severityLevels = ["Mild", "Moderate", "Severe"]
+const severityLevels = ["mild", "moderate", "severe"]
+const manifestationOptions = [
+  "Anaphylaxis",
+  "Angioedema", 
+  "Diarrhea",
+  "Dizziness",
+  "Fatigue",
+  "GI upset",
+  "Hives",
+  "Liver toxicity",
+  "Nausea",
+  "Rash",
+  "Shortness of breath",
+  "Swelling",
+  "Weal",
+  "Other"
+]
 
-export function AllergyDialog({ open, onOpenChange, allergy }: AllergyDialogProps) {
+export function AllergyDialog({ open, onOpenChange, allergy, onAllergyCreated }: AllergyDialogProps) {
   const [formData, setFormData] = useState({
     allergen: allergy?.allergen || "",
     patientId: allergy?.patientId || "",
@@ -45,10 +86,44 @@ export function AllergyDialog({ open, onOpenChange, allergy }: AllergyDialogProp
     reportedBy: allergy?.reportedBy || "",
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Allergy saved:", formData)
-    onOpenChange(false)
+    
+    // Build FHIR AllergyIntolerance payload
+    const payload = {
+      clinicalStatus: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical", code: "active", display: "Active" }] },
+      code: { text: formData.allergen },
+      patient: { reference: `Patient/${formData.patientId}` },
+      onsetDateTime: formData.dateReported || new Date().toISOString().split('T')[0],
+      recordedDate: formData.dateReported || new Date().toISOString(),
+      reaction: [{
+        severity: formData.severity,
+        manifestation: formData.reaction
+      }],
+      ...(formData.notes && { note: [{ text: formData.notes }] })
+    }
+
+    try {
+      const res = await fetch('/api/allergies', {
+        method: 'POST',
+        headers: {
+          accept: 'application/fhir+json',
+          'content-type': 'application/fhir+json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        const text = await res.text()
+        console.error('Failed to create allergy', text)
+      } else {
+        onAllergyCreated?.()
+      }
+    } catch (error) {
+      console.error('Error creating allergy:', error)
+    } finally {
+      onOpenChange(false)
+    }
   }
 
   const handleInputChange = (field: string, value: string) => {
@@ -112,13 +187,18 @@ export function AllergyDialog({ open, onOpenChange, allergy }: AllergyDialogProp
               </div>
               <div className="space-y-2">
                 <Label htmlFor="reaction">Reaction</Label>
-                <Input
-                  id="reaction"
-                  value={formData.reaction}
-                  onChange={(e) => handleInputChange("reaction", e.target.value)}
-                  placeholder="Describe the reaction"
-                  required
-                />
+                <Select value={formData.reaction} onValueChange={(value) => handleInputChange("reaction", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select reaction type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {manifestationOptions.map((manifestation) => (
+                      <SelectItem key={manifestation} value={manifestation}>
+                        {manifestation}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
