@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Calendar, Plus, Filter, Clock, User, UserCheck, Search, RefreshCw } from "lucide-react"
 import { AppointmentDialog } from "@/components/appointment-dialog"
 import { RescheduleDialog } from "@/components/reschedule-dialog"
+import { SlotSearchDialog } from "@/components/slot-search-dialog"
 
 interface AppointmentUI {
   id: string
@@ -37,6 +38,7 @@ export default function AppointmentsPage() {
   const [isBookDialogOpen, setIsBookDialogOpen] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentUI | null>(null)
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false)
+  const [isSlotSearchOpen, setIsSlotSearchOpen] = useState(false)
   const [appointments, setAppointments] = useState<AppointmentUI[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -166,6 +168,14 @@ export default function AppointmentsPage() {
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           <span className="sr-only">Refresh appointments</span>
+        </Button>
+        <Button 
+          variant="outline" 
+          onClick={() => setIsSlotSearchOpen(true)}
+          className="h-9"
+        >
+          <Calendar className="mr-2 h-4 w-4" />
+          Search Slots
         </Button>
         <Button onClick={() => setIsBookDialogOpen(true)} className="bg-accent hover:bg-accent/90">
           <Plus className="mr-2 h-4 w-4" />
@@ -353,6 +363,16 @@ export default function AppointmentsPage() {
         appointment={selectedAppointment}
         open={isRescheduleDialogOpen}
         onOpenChange={setIsRescheduleDialogOpen}
+      />
+
+      {/* Slot Search Dialog */}
+      <SlotSearchDialog
+        open={isSlotSearchOpen}
+        onOpenChange={setIsSlotSearchOpen}
+        onSlotSelected={(slot) => {
+          console.log('Selected slot:', slot)
+          // You can add logic here to pre-fill the appointment form with slot data
+        }}
       />
     </div>
   )
