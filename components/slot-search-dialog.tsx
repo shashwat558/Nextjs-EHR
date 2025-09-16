@@ -26,6 +26,7 @@ interface Slot {
   schedule: string
   serviceType?: string
   serviceCategory?: string
+  provider?: string
 }
 
 interface SlotSearchDialogProps {
@@ -105,15 +106,21 @@ export function SlotSearchDialog({ open, onOpenChange, onSlotSelected }: SlotSea
         slotsData = data as Record<string, unknown>[]
       }
 
-      const transformedSlots: Slot[] = slotsData.map((slot: Record<string, unknown>) => ({
-        id: (slot.id as string) || 'N/A',
-        start: (slot.start as string) || 'N/A',
-        end: (slot.end as string) || 'N/A',
-        status: (slot.status as string) || 'Unknown',
-        schedule: (slot.schedule as Record<string, unknown>)?.reference as string || 'Unknown',
-        serviceType: ((((slot.serviceType as Record<string, unknown>[]) || [])[0] as Record<string, unknown>)?.coding as Record<string, unknown>[] || [])[0]?.display as string,
-        serviceCategory: ((((slot.serviceCategory as Record<string, unknown>[]) || [])[0] as Record<string, unknown>)?.coding as Record<string, unknown>[] || [])[0]?.display as string,
-      }))
+      const transformedSlots: Slot[] = slotsData.map((slot: Record<string, unknown>) => {
+        const schedule = slot.schedule as Record<string, unknown>
+        const appointmentType = slot.appointmentType as Record<string, unknown>
+        
+        return {
+          id: (slot.id as string) || 'N/A',
+          start: (slot.start as string) || 'N/A',
+          end: (slot.end as string) || 'N/A',
+          status: (slot.status as string) || 'Unknown',
+          schedule: (schedule?.reference as string) || 'Unknown',
+          serviceType: ((appointmentType?.coding as Record<string, unknown>[] || [])[0] as Record<string, unknown>)?.display as string,
+          serviceCategory: 'Primary Care', // Default since not provided in FHIR Slot
+          provider: (schedule?.display as string) || 'Unknown',
+        }
+      })
 
       setSlots(transformedSlots)
     } catch (err) {
@@ -312,6 +319,11 @@ export function SlotSearchDialog({ open, onOpenChange, onSlotSelected }: SlotSea
                           {slot.serviceType && (
                             <div className="text-sm text-muted-foreground">
                               {slot.serviceType}
+                            </div>
+                          )}
+                          {slot.provider && (
+                            <div className="text-xs text-muted-foreground">
+                              {slot.provider}
                             </div>
                           )}
                           <div className="text-xs text-muted-foreground">
